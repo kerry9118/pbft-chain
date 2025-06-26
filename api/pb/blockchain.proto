@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/your-username/pbft-chain/api/pb"; // 修改为你的项目路径
+
+// 交易结构
+message Transaction {
+  string id = 1;
+  bytes payload = 2; // 可以是任何序列化后的数据
+  int64 timestamp = 3;
+}
+
+// 区块结构
+message Block {
+  int64 height = 1;
+  string prev_hash = 2;
+  string hash = 3;
+  repeated Transaction transactions = 4;
+  int64 timestamp = 5;
+}
+
+// PBFT 共识消息
+// 这是一个通用的消息结构，通过 type 字段来区分具体是哪个阶段的消息
+message ConsensusMessage {
+  enum Type {
+    PRE_PREPARE = 0;
+    PREPARE = 1;
+    COMMIT = 2;
+    VIEW_CHANGE = 3;
+  }
+
+  Type type = 1;
+  int64 view = 2;          // 视图编号
+  int64 sequence = 3;      // 序列号
+  string node_id = 4;      // 发送者节点ID
+  bytes request_digest = 5; // 请求内容的摘要 (例如，一批交易的哈希)
+  // Pre-prepare 阶段需要携带原始请求
+  repeated Transaction request = 6;
+}
+
+// 定义节点间的 gRPC 服务
+service NodeService {
+  // 广播共识消息
+  rpc Broadcast(ConsensusMessage) returns (ConsensusMessage) {}
+}
