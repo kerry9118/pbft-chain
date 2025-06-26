@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pb;
 
-option go_package = "github.com/your-username/pbft-chain/api/pb"; // 修改为你的项目路径
+option go_package = "github.com/kerry9118/pbft-chain/api/pb"; // 修改为你的项目路径
 
 // 交易结构
 message Transaction {

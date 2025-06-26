@@ -6,59 +6,59 @@ import (
 	"log"
 	"sync"
 
-	"github.com/kerry9118/pbft-chain/api/pb"
+	"github.com/kerry9118/pbft-chain/api/pb" // 替換為你的專案路徑
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Node 代表网络中的一个节点
+// Node 代表網路中的一個節點
 type Node struct {
-	ID      string                          // 节点ID
-	Addr    string                          // 节点地址 ip:port
-	Peers   map[string]pb.NodeServiceClient // 连接的其他节点
+	ID      string                          // 節點ID
+	Addr    string                          // 節點位址 ip:port
+	Peers   map[string]pb.NodeServiceClient // 連線的其他節點
 	Server  *grpc.Server
 	Mutex   sync.RWMutex
-	MsgChan chan *pb.ConsensusMessage // 用于接收共识消息
+	MsgChan chan *pb.ConsensusMessage // 用於接收共識訊息
 }
 
-// NewNode 创建一个新节点实例
+// NewNode 建立一個新節點例項
 func NewNode(id, addr string) *Node {
 	return &Node{
 		ID:      id,
 		Addr:    addr,
 		Peers:   make(map[string]pb.NodeServiceClient),
-		MsgChan: make(chan *pb.ConsensusMessage, 100), // 带缓冲的channel
+		MsgChan: make(chan *pb.ConsensusMessage, 100), // 帶緩衝的channel
 	}
 }
 
-// Start 启动 gRPC 服务器并监听
+// Start 啟動 gRPC 伺服器並監聽
 func (n *Node) Start() {
-	// ... 服务器启动逻辑将在 server.go 中实现
-	log.Printf("节点 %s 在 %s 启动 gRPC 服务", n.ID, n.Addr)
+	// ... 伺服器啟動邏輯將在 server.go 中實現
+	log.Printf("節點 %s 在 %s 啟動 gRPC 服務", n.ID, n.Addr)
 	go n.startServer()
 }
 
-// Connect 连接到其他节点
+// Connect 連線到其他節點
 func (n *Node) Connect(peerID, peerAddr string) error {
 	n.Mutex.Lock()
 	defer n.Mutex.Unlock()
 
 	if _, ok := n.Peers[peerID]; ok {
-		return nil // 已经连接
+		return nil // 已經連線
 	}
 
 	conn, err := grpc.Dial(peerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return fmt.Errorf("无法连接到节点 %s: %v", peerAddr, err)
+		return fmt.Errorf("無法連線到節點 %s: %v", peerAddr, err)
 	}
 
 	client := pb.NewNodeServiceClient(conn)
 	n.Peers[peerID] = client
-	log.Printf("节点 %s 成功连接到 %s (%s)", n.ID, peerID, peerAddr)
+	log.Printf("節點 %s 成功連線到 %s (%s)", n.ID, peerID, peerAddr)
 	return nil
 }
 
-// Broadcast 向所有已连接的对等节点广播消息
+// Broadcast 向所有已連線的對等節點廣播訊息
 func (n *Node) Broadcast(msg *pb.ConsensusMessage) {
 	n.Mutex.RLock()
 	defer n.Mutex.RUnlock()
@@ -67,7 +67,7 @@ func (n *Node) Broadcast(msg *pb.ConsensusMessage) {
 		go func(pid string, c pb.NodeServiceClient) {
 			_, err := c.Broadcast(context.Background(), msg)
 			if err != nil {
-				log.Printf("节点 %s 向 %s 广播消息失败: %v", n.ID, pid, err)
+				log.Printf("節點 %s 向 %s 廣播訊息失敗: %v", n.ID, pid, err)
 			}
 		}(peerID, client)
 	}

@@ -5,38 +5,37 @@ import (
 	"log"
 	"net"
 
-	"github.com/kerry9118/pbft-chain/api/pb" // 替换
+	"github.com/kerry9118/pbft-chain/api/pb" // 替換
 	"google.golang.org/grpc"
 )
 
-// NodeServiceServer 实现了 .proto 文件中定义的服务
+// NodeServiceServer 實現了 .proto 檔案中定義的服務
 type NodeServiceServer struct {
 	pb.UnimplementedNodeServiceServer
-	Node *Node // 指向拥有该服务的节点
+	Node *Node // 指向擁有該服務的節點
 }
 
-// Broadcast 是 gRPC 服务的实现，当节点收到广播时调用此方法
+// Broadcast 是 gRPC 服務的實現，當節點收到廣播時呼叫此方法
 func (s *NodeServiceServer) Broadcast(ctx context.Context, msg *pb.ConsensusMessage) (*pb.ConsensusMessage, error) {
-	// 将收到的消息放入节点的 channel 中，由共识层处理
+	// 將收到的訊息放入節點的 channel 中，由共識層處理
 	s.Node.MsgChan <- msg
-	// log.Printf("节点 %s 收到来自 %s 的广播消息: 类型 %s, 视图 %d, 序号 %d", s.Node.ID, msg.NodeId, msg.Type, msg.View, msg.Sequence)
-	return &pb.ConsensusMessage{}, nil // 简单返回，实际可以返回确认信息
+	return &pb.ConsensusMessage{}, nil // 簡單返回，實際可以返回確認訊息
 }
 
-// startServer 是一个内部方法，用于启动 gRPC 服务器
+// startServer 是一個內部方法，用於啟動 gRPC 伺服器
 func (n *Node) startServer() {
 	lis, err := net.Listen("tcp", n.Addr)
 	if err != nil {
-		log.Fatalf("节点 %s 监听失败: %v", n.ID, err)
+		log.Fatalf("節點 %s 監聽失敗: %v", n.ID, err)
 	}
 
 	s := grpc.NewServer()
-	n.Server = s // 保存 server 实例，方便后续优雅关闭
+	n.Server = s // 儲存 server 例項，方便後續優雅關閉
 
-	// 注册服务
+	// 註冊服務
 	pb.RegisterNodeServiceServer(s, &NodeServiceServer{Node: n})
 
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("节点 %s 启动 gRPC 服务失败: %v", n.ID, err)
+		log.Fatalf("節點 %s 啟動 gRPC 服務失敗: %v", n.ID, err)
 	}
 }
